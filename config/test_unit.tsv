@@ -1,0 +1,3 @@
+sample_name	unit_name	fq1	fq2	sra	fastp_adapters	fastp_extra	strandedness
+test1	1	/storage/leikaiLab/hanlitian/raw_data_leikai/20250929_bulk/fastq/test1-1_1.fq.gz	/storage/leikaiLab/hanlitian/raw_data_leikai/20250929_bulk/fastq/test1-1_2.fq.gz
+test2	1	/storage/leikaiLab/hanlitian/raw_data_leikai/20250929_bulk/fastq/test2-1_1.fq.gz	/storage/leikaiLab/hanlitian/raw_data_leikai/20250929_bulk/fastq/test2-1_2.fq.gz

@@ -1,0 +1,14 @@
+configfile: "config/config.yaml"
+
+##### load rules #####
+
+
+include: "rules/common.smk"
+include: "rules/qc.smk"
+include: "rules/align.smk"
+include: "rules/count.smk"
+
+# --- Workflow Rules ---
+rule all:
+    input:
+        get_final_output()
