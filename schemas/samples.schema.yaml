@@ -1,0 +1,36 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+
+description: an entry in the sample sheet
+
+type: object
+
+properties:
+  sample_name:
+    type: string
+    description: sample name/identifier
+  run:
+    type: integer
+    description: run number (technical replicate)
+  R1:
+    type: string
+    description: path to forward read FASTQ file
+  R2:
+    type: string
+    description: path to reverse read FASTQ file
+  replicate_name:
+    type: string
+    description: biological replicate group name (optional)
+  strandedness:
+    type: string
+    enum: ["none", "forward", "reverse"]
+    description: library strandedness (optional, defaults to 'none')
+  passqc:
+    type: integer
+    enum: [0, 1]
+    description: QC pass flag, 1=pass, 0=fail (optional)
+
+required:
+  - sample_name
+  - run
+  - R1
+  - R2

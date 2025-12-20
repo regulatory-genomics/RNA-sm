@@ -1,0 +1,28 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+
+description: snakemake configuration file
+
+type: object
+
+properties:
+  samples:
+    type: string
+    description: path to sample information CSV file
+  ref:
+    type: object
+    properties:
+      species:
+        type: string
+      release:
+        type: integer
+      build:
+        type: string
+    required:
+      - species
+      - build
+  result_path:
+    type: string
+    description: output directory path
+
+required:
+  - samples

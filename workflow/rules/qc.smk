@@ -1,45 +1,45 @@
-rule fastqc:
+import os
+
+rule fastp:
     input:
-        fq1=lambda w: get_units_fastqs(w)[0],
-        fq2=lambda w: get_units_fastqs(w)[1]
+        r1 = lambda w: get_units_fastqs(w)[0],
+        r2 = lambda w: get_units_fastqs(w)[1],
     output:
-        # Name the outputs to match the inputs
-        html1="results/fastqc/{sample}_{unit}_1_fastqc.html",
-        html2="results/fastqc/{sample}_{unit}_2_fastqc.html",
-        zip1="results/fastqc/{sample}_{unit}_1_fastqc.zip",
-        zip2="results/fastqc/{sample}_{unit}_2_fastqc.zip"
-    params:
-        outdir="results/fastqc"
+        r1 = temp(os.path.join(result_path, "trimmed", "{sample_run}_1.fq.gz")),
+        r2 = temp(os.path.join(result_path, "trimmed", "{sample_run}_2.fq.gz")),
+        report_html = os.path.join(result_path, "qc", "fastp", "{sample_run}_fastp.html"),
+        report_json = os.path.join(result_path, "qc", "fastp", "{sample_run}_fastp.json"),
+    conda: 
+        "../env/fastp.yaml"
+    resources:
+        mem_mb=16000,
+        runtime = 60,
     log:
-        "logs/fastqc/{sample}-{unit}.log"
+        "logs/fastp/{sample_run}.log"
+    threads: 4
     shell:
-                """
-        # 1. Run fastqc on both input files
-        fastqc {input.fq1} {input.fq2} --outdir {params.outdir} &> {log}
+        "fastp -i {input.r1} -I {input.r2} -o {output.r1} -O {output.r2} "
+        "--detect_adapter_for_pe --trim_poly_g --thread {threads} "
+        "-j {output.report_json} -h {output.report_html} 2> {log}"
 
-        # 2. Figure out the default output names fastqc created
-        # The 'basename' command strips directory paths and optionally a suffix
-        fq1_base=$(basename {input.fq1} .fq.gz)
-        fq2_base=$(basename {input.fq2} .fq.gz)
-
-        # 3. Rename the actual files to the names Snakemake expects
-        mv {params.outdir}/${{fq1_base}}_fastqc.html {output.html1}
-        mv {params.outdir}/${{fq2_base}}_fastqc.html {output.html2}
-        mv {params.outdir}/${{fq1_base}}_fastqc.zip {output.zip1}
-        mv {params.outdir}/${{fq2_base}}_fastqc.zip {output.zip2}
-        """
-
-
-rule trim_galore_pe:
+rule multiqc:
     input:
-        get_units_fastqs,
+        expand(
+            os.path.join(result_path, "qc", "fastp", "{sample_run}_fastp.json"),
+            sample_run=annot.index
+        ),
+        expand(
+            os.path.join(result_path, "align", "{sample_run}_Log.final.out"),
+            sample_run=annot.index
+        ),
     output:
-        fasta_fwd="results/trimmed/{sample}-{unit}_1.fq.gz",
-        report_fwd="results/trimmed/reports/{sample}-{unit}_1_trimming_report.txt",
-        fasta_rev="results/trimmed/{sample}-{unit}_2.fq.gz",
-        report_rev="results/trimmed/reports/{sample}-{unit}_2_trimming_report.txt",
-    threads: 1
+        html=os.path.join(result_path, "qc", "multiqc_report.html"),
+        data=directory(os.path.join(result_path, "qc", "multiqc_report_data"))
     log:
-        "logs/trim_galore/{sample}-{unit}.log"
-    wrapper:
-        "v7.6.0/bio/trim_galore/pe"
+        "logs/multiqc.log"
+    conda:
+        "../env/multiqc.yaml"
+    params:
+        outdir=os.path.join(result_path, "qc")
+    shell:
+        "multiqc {input} -o {params.outdir} --filename multiqc_report.html --force 2> {log}"

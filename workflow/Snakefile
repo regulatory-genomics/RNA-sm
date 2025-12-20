@@ -1,14 +1,60 @@
+##### global workflow dependencies #####
+
+# ===================================================
+#                    Setup Section
+# ===================================================
+
+# libraries
+import os
+import sys
+import pandas as pd
+from snakemake.utils import validate, min_version
+
+##### set minimum snakemake version #####
+min_version("8.0.0")
+
+module_name = "rnaseq_pipeline"
+
+# report: os.path.join("report", "workflow.rst")
+
+# list of names of the used environment specifications in workflow/envs/{env_name}.yaml
+envs = ["fastp", "pandas", "multiqc"]
+
+# load config and sample annotation sheets #####
 configfile: "config/config.yaml"
 
-##### load rules #####
-
+validate(config, schema="../schemas/config.schema.yaml")
 
 include: "rules/common.smk"
+
+##### set global variables #####
+result_path = config.get("result_path", "results")
+
+# ===================================================
+#                    Rules Section
+# ===================================================
+
+rule all:
+    input:
+        # QC outputs
+        multiqc_report = os.path.join(result_path, "qc", "multiqc_report.html"),
+        
+        # Alignment outputs
+        bam_files = expand(
+            os.path.join(result_path, "align", "{sample_run}_sortedByCoord.out.bam"),
+            sample_run=annot.index
+        ),
+        
+        # Merged BAM files (if multiple runs per sample)
+        merged_bams = expand(
+            os.path.join(result_path, "align", "merged", "{sample}.bam"),
+            sample=[s for s in samples.keys() if len(get_runs_for_sample(s)) > 1]
+        ) if any(len(get_runs_for_sample(s)) > 1 for s in samples.keys()) else [],
+        
+        # Count matrix
+        counts = os.path.join(result_path, "counts", "all_counts.tsv"),
+
+##### load rules #####
 include: "rules/qc.smk"
 include: "rules/align.smk"
 include: "rules/count.smk"
-
-# --- Workflow Rules ---
-rule all:
-    input:
-        get_final_output()

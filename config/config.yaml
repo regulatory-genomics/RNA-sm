@@ -1,10 +1,8 @@
-# path or URL to sample sheet (TSV format, columns: sample, condition, ...)
-samples: config/als_sample_info.tsv
-# path or URL to sequencing unit sheet (TSV format, columns: sample, unit, fq1, fq2)
-# Units are technical replicates (e.g. lanes, or resequencing of the same biological
-# sample).
-units: config/als_unit.tsv
+# path to sample information CSV file (columns: sample_name, run, R1, R2, replicate_name)
+samples: config/test_info.csv
 
+# output directory path
+result_path: /storage/zhangkaiLab/hanlitian/macrophage/process/20251220_RNA
 
 ref:
   # Ensembl species name
@@ -13,3 +11,17 @@ ref:
   release: 100
   # Genome build
   build: GRCh38
+
+# Resource paths
+resources:
+  star_index: /storage/zhangkaiLab/hanlitian/database/algin_ref/atac_pipeline/hg38/star
+  gtf: /storage/zhangkaiLab/hanlitian/database/algin_ref/atac_pipeline/hg38/gencode.v38.basic.annotation.gtf
+  fasta: /storage/zhangkaiLab/hanlitian/database/algin_ref/atac_pipeline/hg38/hg38.fa
+
+# STAR alignment parameters
+params:
+  star:
+    align:
+      extra: "--outSAMtype BAM SortedByCoordinate --quantMode GeneCounts"
+    index:
+      extra: ""

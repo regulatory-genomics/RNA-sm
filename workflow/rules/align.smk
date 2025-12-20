@@ -1,47 +1,75 @@
-rule star_pe_multi:
+import os
+
+rule star_align:
     input:
-        # use a list for multiple fastq files for one sample
-        # usually technical replicates across lanes/flowcells
-        fq1="results/trimmed/{sample}-{unit}_1.fq.gz",
-        # paired end reads needs to be ordered so each item in the two lists match
-        fq2="results/trimmed/{sample}-{unit}_2.fq.gz",  #optional
-        # path to STAR reference genome index
-        idx="/storage/leikaiLab/hanlitian/database/STAR_reference/star_v2",
-        gtf="/storage/leikaiLab/hanlitian/database/gtf/hg38_star.gtf"
+        fq1=lambda w: os.path.join(result_path, "trimmed", f"{w.sample_run}_1.fq.gz"),
+        fq2=lambda w: os.path.join(result_path, "trimmed", f"{w.sample_run}_2.fq.gz"),
+        idx=config["resources"]["star_index"],
+        gtf=config["resources"]["gtf"]
     output:
-        # see STAR manual for additional output files
-        aln="results/align/{sample}-{unit}_sortedByCoord.out.bam",
-        log="logs/align/{sample}-{unit}_log.out",
-        reads_per_gene="results/align/{sample}-{unit}_ReadsPerGene.out.tab",
-        sj="results/align/{sample}-{unit}_SJ.out.tab",
-        unmapped=["results/align/unmapped/{sample}-{unit}_unmapped.1.fastq.gz","results/align/unmapped/{sample}-{unit}_unmapped.2.fastq.gz"],
+        aln=os.path.join(result_path, "align", "{sample_run}_sortedByCoord.out.bam"),
+        log=os.path.join(result_path, "align", "{sample_run}_Log.final.out"),
+        reads_per_gene=os.path.join(result_path, "align", "{sample_run}_ReadsPerGene.out.tab"),
+        sj=os.path.join(result_path, "align", "{sample_run}_SJ.out.tab"),
+        unmapped=[
+            os.path.join(result_path, "align", "unmapped", "{sample_run}_unmapped.1.fastq.gz"),
+            os.path.join(result_path, "align", "unmapped", "{sample_run}_unmapped.2.fastq.gz")
+        ],
     log:
-        "logs/align/{sample}-{unit}_star.log",
+        "logs/star/{sample_run}.log",
     params:
-        # optional parameters
-        extra=lambda wc, input: " ".join(
-            [
-                "--outSAMtype BAM SortedByCoordinate",
-                "--quantMode GeneCounts",
-                f'--sjdbGTFfile "{input.gtf}"',
-            ]
-        ),
+        extra=lambda wc, input: " ".join([
+            "--outSAMtype BAM SortedByCoordinate",
+            "--quantMode GeneCounts",
+            f'--sjdbGTFfile "{input.gtf}"',
+        ]),
+        index=lambda wc, input: input.idx,
     threads: 8
+    resources:
+        mem_mb=50000,
+        runtime=400,
     wrapper:
         "v7.6.0/bio/star/align"
 
+rule merge_sample_runs:
+    input:
+        lambda w: expand(
+            os.path.join(result_path, "align", "{sample_run}_sortedByCoord.out.bam"),
+            sample_run=get_runs_for_sample(w.sample)
+        )
+    output:
+        os.path.join(result_path, "align", "merged", "{sample}.bam")
+    log:
+        "logs/samtools/merge/{sample}.log"
+    threads: 4
+    wrapper:
+        "v3.3.3/bio/samtools/merge"
+
+rule samtools_index:
+    input:
+        "{prefix}.bam"
+    output:
+        "{prefix}.bam.bai"
+    log:
+        "logs/samtools/index/{prefix}.log"
+    threads: 2
+    wrapper:
+        "v3.3.3/bio/samtools/index"
 
 rule star_index:
     input:
-        fasta="/storage/leikaiLab/hanlitian/database/STAR_reference/refdata-gex-GRCh38-2024-A/fasta/genome.fa",
-        gtf="/storage/leikaiLab/hanlitian/database/gtf/hg38_star.gtf",
+        fasta=config["resources"]["fasta"],
+        gtf=config["resources"]["gtf"],
     output:
-        directory("/storage/leikaiLab/hanlitian/database/STAR_reference/star_v2"),
+        directory(config["resources"]["star_index"]),
     log:
-        "logs/star_index_genome.log",
+        "logs/star_index.log",
     cache: True
     params:
-        extra=lookup(within=config, dpath="params/star/index", default=""),
-    threads: 4
+        extra=config["params"]["star"]["index"]["extra"],
+    threads: 8
+    resources:
+        mem_mb=50000,
+        runtime=100,
     wrapper:
         "v7.2.0/bio/star/index"
