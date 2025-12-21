@@ -235,20 +235,20 @@ def get_final_output():
     
     outputs = []
     
-    # Alignment outputs for all sample_runs
+    # Important processed - BAM files for all sample_runs
     for sample_run in annot.index:
-        outputs.append(f"{result_path}/align/{sample_run}_sortedByCoord.out.bam")
+        outputs.append(os.path.join(result_path, "Important_processed", "Bam", f"{sample_run}_sortedByCoord.out.bam"))
     
     # Merged BAM files per sample (if multiple runs exist)
     for sample_name in samples.keys():
         runs = get_runs_for_sample(sample_name)
         if len(runs) > 1:
-            outputs.append(f"{result_path}/align/merged/{sample_name}_merged.bam")
+            outputs.append(os.path.join(result_path, "Important_processed", "Bam", f"{sample_name}.bam"))
     
-    # Count matrix
-    outputs.append(f"{result_path}/counts/all_counts.tsv")
+    # Downstream results - Count matrix
+    outputs.append(os.path.join(result_path, "downstream_res", "counts", "all_counts.tsv"))
     
-    # MultiQC report
-    outputs.append(f"{result_path}/qc/multiqc_report.html")
+    # Report - MultiQC report
+    outputs.append(os.path.join(result_path, "Report", "multiqc_report.html"))
     
     return outputs

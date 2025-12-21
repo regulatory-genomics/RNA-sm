@@ -36,23 +36,23 @@ result_path = config.get("result_path", "results")
 
 rule all:
     input:
-        # QC outputs
-        multiqc_report = os.path.join(result_path, "qc", "multiqc_report.html"),
+        # Report outputs
+        multiqc_report = os.path.join(result_path, "Report", "multiqc_report.html"),
         
-        # Alignment outputs
+        # Important processed - BAM files
         bam_files = expand(
-            os.path.join(result_path, "align", "{sample_run}_sortedByCoord.out.bam"),
+            os.path.join(result_path, "Important_processed", "Bam", "{sample_run}_sortedByCoord.out.bam"),
             sample_run=annot.index
         ),
         
         # Merged BAM files (if multiple runs per sample)
         merged_bams = expand(
-            os.path.join(result_path, "align", "merged", "{sample}.bam"),
+            os.path.join(result_path, "Important_processed", "Bam", "{sample}.bam"),
             sample=[s for s in samples.keys() if len(get_runs_for_sample(s)) > 1]
         ) if any(len(get_runs_for_sample(s)) > 1 for s in samples.keys()) else [],
         
-        # Count matrix
-        counts = os.path.join(result_path, "counts", "all_counts.tsv"),
+        # Downstream results - Count matrix
+        counts = os.path.join(result_path, "downstream_res", "counts", "all_counts.tsv"),
 
 ##### load rules #####
 include: "rules/qc.smk"
