@@ -54,7 +54,11 @@ rule all:
         # Downstream results - Count matrix
         counts = os.path.join(result_path, "downstream_res", "counts", "all_counts.tsv"),
 
+        # BigWig files
+        bigwigs = get_final_bigwigs,
+
 ##### load rules #####
 include: "rules/qc.smk"
 include: "rules/align.smk"
 include: "rules/count.smk"
+include: "rules/track.smk"

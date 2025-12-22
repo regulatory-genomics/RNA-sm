@@ -17,6 +17,7 @@ resources:
   star_index: /storage/zhangkaiLab/hanlitian/database/algin_ref/atac_pipeline/hg38/star
   gtf: /storage/zhangkaiLab/hanlitian/database/algin_ref/atac_pipeline/hg38/gencode.v38.basic.annotation.gtf
   fasta: /storage/zhangkaiLab/hanlitian/database/algin_ref/atac_pipeline/hg38/hg38.fa
+  chrom_sizes: /storage/zhangkaiLab/hanlitian/database/algin_ref/atac_pipeline/hg38/hg38.chromSizes
 
 # STAR alignment parameters
 params:
@@ -25,3 +26,4 @@ params:
       extra: "--outSAMtype BAM SortedByCoordinate --quantMode GeneCounts"
     index:
       extra: ""
+    strandedness: stranded

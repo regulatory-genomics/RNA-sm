@@ -172,27 +172,28 @@ def get_all_fastqs_for_sample(sample_name):
             r2_files.append(str(r2))
     return r1_files, r2_files
 
+def normalize_strandedness(val):
+    """Normalize strandedness value to expected format"""
+    if pd.isna(val) or val == '':
+        return "none"
+    strand_val = str(val).strip().lower()
+    # Map common variations to expected values for count-matrix.py
+    if strand_val in ['', 'nan', 'none', 'n', 'unstranded', 'no']:
+        return "none"
+    elif strand_val in ['forward', 'f', 'yes', 'y', 'first']:
+        return "yes"
+    elif strand_val in ['reverse', 'r', 'second']:
+        return "reverse"
+    else:
+        # Return as-is if it's already a valid value
+        return strand_val
+
 def get_strandedness(sample_run=None):
     """
     Get strandedness information for RNA-seq samples.
     Returns 'none', 'yes', or 'reverse' (matching count-matrix.py expectations).
     If strandedness column exists in annot, use it; otherwise default to 'none'.
     """
-    def normalize_strandedness(val):
-        """Normalize strandedness value to expected format"""
-        if pd.isna(val) or val == '':
-            return "none"
-        strand_val = str(val).strip().lower()
-        # Map common variations to expected values for count-matrix.py
-        if strand_val in ['', 'nan', 'none', 'n', 'unstranded', 'no']:
-            return "none"
-        elif strand_val in ['forward', 'f', 'yes', 'y', 'first']:
-            return "yes"
-        elif strand_val in ['reverse', 'r', 'second']:
-            return "reverse"
-        else:
-            # Return as-is if it's already a valid value
-            return strand_val
     
     if "strandedness" in annot.columns:
         if sample_run:
@@ -202,8 +203,9 @@ def get_strandedness(sample_run=None):
             # Return list of strandedness values for all sample_runs
             return [normalize_strandedness(annot.loc[sr, "strandedness"]) for sr in annot.index]
     else:
+        config_strandedness = config.get("params", {}).get("star", {}).get("strandedness", "none")
         # Default to 'none' if column doesn't exist
-        return "none" if sample_run else ["none"] * len(annot.index)
+        return config_strandedness if sample_run else [config_strandedness] * len(annot.index)
 
 def get_samples_passing_qc():
     """Get sample names that have at least one run passing QC (passqc=1).
@@ -252,3 +254,120 @@ def get_final_output():
     outputs.append(os.path.join(result_path, "Report", "multiqc_report.html"))
     
     return outputs
+
+def get_track_strandedness(sample_run):
+    """
+    Get strandedness for track generation.
+    Returns 'Stranded' or 'Unstranded' for STAR --outWigStrand parameter.
+    """
+    strand_val = get_strandedness(sample_run)
+    # STAR expects 'Stranded' or 'Unstranded' (capitalized)
+    if strand_val in ['yes', 'reverse']:
+        return "Stranded"
+    else:
+        return "Unstranded"
+
+def is_stranded(sample_run):
+    """Check if sample is stranded"""
+    strand_val = get_strandedness(sample_run)
+    return strand_val in ['yes', 'reverse']
+
+def get_star_bg_filename(wildcards):
+    """
+    Maps the requested BigWig suffix to the specific raw STAR output file.
+    Implements the logic from the Python script:
+    - minusUniq -> str1 (if stranded)
+    - plusUniq  -> str2 (if stranded)
+    - uniq      -> str1 (if unstranded)
+    """
+    mapping = {
+        # Stranded mappings (matches python script logic)
+        "minusUniq": "Signal.Unique.str1.out.bg",
+        "minusAll":  "Signal.UniqueMultiple.str1.out.bg",
+        "plusUniq":  "Signal.Unique.str2.out.bg",
+        "plusAll":   "Signal.UniqueMultiple.str2.out.bg",
+        # Unstranded mappings
+        "uniq":      "Signal.Unique.str1.out.bg",
+        "all":       "Signal.UniqueMultiple.str1.out.bg"
+    }
+    return mapping[wildcards.suffix]
+
+
+def get_final_bigwigs(wildcards):
+    """
+    Aggregation function: determine which BigWig files to build
+    for all samples based on their strandedness.
+
+    Returned paths are used by rule `all` in the Snakefile.
+    """
+    final_files = []
+
+    for sample_name in samples.keys():
+        # Get strandedness from first run of the sample
+        sample_runs = get_runs_for_sample(sample_name)
+        if sample_runs:
+            strand_val = get_strandedness(sample_runs[0])
+        else:
+            strand_val = "none"
+
+        if strand_val in ["yes", "reverse"]:
+            # Stranded libraries → 4 tracks
+            suffixes = ["minusUniq", "minusAll", "plusUniq", "plusAll"]
+        else:
+            # Unstranded libraries → 2 tracks
+            suffixes = ["uniq", "all"]
+
+        for suff in suffixes:
+            final_files.append(
+                os.path.join(
+                    result_path,
+                    "Important_processed",
+                    "Track",
+                    f"{sample_name}_{suff}.bw",
+                )
+            )
+
+    return final_files
+
+
+def get_track_strandedness(sample_name_or_run):
+    """
+    Get strandedness for track generation.
+    Returns 'Stranded' or 'Unstranded' for STAR --outWigStrand parameter.
+    Can accept either sample_name or sample_run.
+    """
+    # If this is a sample_run, use directly
+    if sample_name_or_run in annot.index:
+        strand_val = get_strandedness(sample_name_or_run)
+    else:
+        # Treat as sample_name: look up first run
+        sample_runs = get_runs_for_sample(sample_name_or_run)
+        if sample_runs:
+            strand_val = get_strandedness(sample_runs[0])
+        else:
+            strand_val = "none"
+
+    # STAR expects 'Stranded' or 'Unstranded' (capitalized)
+    if strand_val in ["yes", "reverse"]:
+        return "Stranded"
+    else:
+        return "Unstranded"
+
+
+def get_bam_for_tracks(sample_name):
+    """
+    Get the BAM file to use for track generation.
+    Prefers merged BAM if available, otherwise uses first sample_run BAM.
+    """
+    sample_runs = get_runs_for_sample(sample_name)
+    if len(sample_runs) > 1:
+        # Use merged BAM if multiple runs exist
+        return os.path.join(result_path, "Important_processed", "Bam", f"{sample_name}.bam")
+    else:
+        # Use the single run BAM
+        return os.path.join(
+            result_path,
+            "Important_processed",
+            "Bam",
+            f"{sample_runs[0]}_sortedByCoord.out.bam",
+        )
