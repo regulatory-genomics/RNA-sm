@@ -203,7 +203,7 @@ def get_strandedness(sample_run=None):
             # Return list of strandedness values for all sample_runs
             return [normalize_strandedness(annot.loc[sr, "strandedness"]) for sr in annot.index]
     else:
-        config_strandedness = config.get("params", {}).get("star", {}).get("strandedness", "none")
+        config_strandedness = config.get("params", {}).get("star", {}).get("strandedness", "yes")
         # Default to 'none' if column doesn't exist
         return config_strandedness if sample_run else [config_strandedness] * len(annot.index)
 

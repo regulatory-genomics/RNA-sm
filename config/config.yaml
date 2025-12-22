@@ -26,4 +26,4 @@ params:
       extra: "--outSAMtype BAM SortedByCoordinate --quantMode GeneCounts"
     index:
       extra: ""
-    strandedness: stranded
+    strandedness: "yes"

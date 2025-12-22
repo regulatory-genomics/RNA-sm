@@ -76,7 +76,7 @@ rule bedgraph_to_bigwig:
         "../env/kentutils.yaml"
     shell:
         """
-        # Construct the full path here: {input.bg_dir}/{params.filename}
+        # Construct the full path here: {params.bg_dir}/{params.filename}
         
         bedSort {params.bg_dir}/{params.filename} {params.bg_dir}/{params.filename}.sorted 2> {log} && \
         
