@@ -20,21 +20,23 @@ rule rsem_quant:
         seed=12345,
         fwd_prob=lambda w: get_rsem_forward_prob(w),
         # Detect paired-end from the sample info or assume paired
-        paired = lambda w: get_rsem_paired_flag(w),
+        paired=lambda w: get_rsem_paired_flag(w),
+        # Only add --calc-ci when enabled in config.yaml (params.rsem.calc_ci: true)
+        calc_ci_flag="--calc-ci" if config.get("params", {}).get("rsem", {}).get("calc_ci", False) else "",
         index_prefix=os.path.join(config["resources"]["rsem_index_dir"], "rsem"),
         output_prefix=lambda w: os.path.join(result_path, "downstream_res", "rsem", w.sample)
     threads: 8
     resources:
         # RSEM needs significant RAM for CI calculation (approx 30GB+ for human)
         mem_mb=32000,
-        runtime=120
+        runtime=500
     conda:
         "../env/rsem.yaml"
     shell:
         """
         rsem-calculate-expression --bam \
             --estimate-rspd \
-            --calc-ci \
+            {params.calc_ci_flag} \
             --seed {params.seed} \
             -p {threads} \
             --no-bam-output \
