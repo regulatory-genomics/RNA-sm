@@ -68,8 +68,8 @@ rule qc_gene_type_count:
         # Path to the python script you saved
         script = "workflow/scripts/rna_qc.py"
     resources:
-        mem_mb = 4000,   # Parsing BAMs requires decent memory, but less than RSEM
-        runtime = 60     # Should be fast (< 30 mins usually)
+        mem_mb = 4000,
+        runtime = 60     
     conda:
         "../env/pysam.yaml" # Must contain pysam
     log:
@@ -82,6 +82,56 @@ rule qc_gene_type_count:
             --output_filename {output.json} \
             > {log} 2>&1
         """
+
+rule rnaseqqc:
+    """
+    Run rnaseqc quality control tool on a BAM file using a GTF annotation.
+    Produces multiple output files with QC metrics, gene and exon counts, TPM, etc.
+    Handles optional BED file only if provided.
+    The BAM file is the sorted BAM file from STAR alignment.
+    """
+    input:
+        bam=os.path.join(result_path, "Important_processed", "Bam", "{sample}_sortedByCoord.out.bam"),
+        gtf=config["resources"]["collapsed_gtf"],
+    output:
+        metrics_tsv=os.path.join(result_path, "Report", "rnaseqqc", "{sample}.metrics.tsv"),
+        exon_reads_gct=os.path.join(result_path, "Report", "rnaseqqc", "{sample}.exon_reads.gct"),
+        gene_reads_gct=os.path.join(result_path, "Report", "rnaseqqc", "{sample}.gene_reads.gct"),
+        gene_tpm_gct=os.path.join(result_path, "Report", "rnaseqqc", "{sample}.gene_tpm.gct"),
+        coverage_tsv=os.path.join(result_path, "Report", "rnaseqqc", "{sample}.coverage.tsv")
+    params:
+        outdir=os.path.join(result_path, "Report", "rnaseqqc"),
+        sample="{sample}",
+        bed_flag=(f"--bed {config['resources'].get('rnaseqc_bed')}"
+                  if config.get("resources", {}).get("rnaseqc_bed") else "")
+    log:
+        os.path.join(result_path, "logs", "rnaseqqc", "{sample}.log")
+    conda:
+        "../env/rnaseqqc.yaml"
+    shell:
+        r"""
+        mkdir -p {params.outdir}
+        rnaseqc \
+            {input.gtf} \
+            {input.bam} \
+            {params.outdir} \
+            --sample {params.sample} \
+            {params.bed_flag} \
+            --coverage \
+            > {log} 2>&1
+        """
+
+rule collapse_gtf:
+    input:
+        gtf=config["resources"]["gtf"],
+    output:
+        collapsed_gtf=config["resources"]["collapsed_gtf"],
+    conda:
+        "../env/collapse_gtf.yaml"
+    log:
+        os.path.join(result_path, "logs", "collapse_gtf.log")
+    shell:
+        "python workflow/scripts/collapse_gene.py {input.gtf} {output.collapsed_gtf} > {log} 2>&1"
 
 rule multiqc:
     input:

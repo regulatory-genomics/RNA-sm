@@ -67,6 +67,16 @@ rule all:
             os.path.join(result_path, "Report", "rsem", "{sample}.genes.json"),
             sample=samples.keys()
         ),
+        rnaseqqc = expand(
+            [
+                os.path.join(result_path, "Report", "rnaseqqc", "{sample}.metrics.tsv"),
+                os.path.join(result_path, "Report", "rnaseqqc", "{sample}.exon_reads.gct"),
+                os.path.join(result_path, "Report", "rnaseqqc", "{sample}.gene_reads.gct"),
+                os.path.join(result_path, "Report", "rnaseqqc", "{sample}.gene_tpm.gct"),
+                os.path.join(result_path, "Report", "rnaseqqc", "{sample}.coverage.tsv"),
+            ],
+            sample=samples.keys()
+        ),
 
 ##### load rules #####
 include: "rules/quantification.smk"

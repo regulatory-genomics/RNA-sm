@@ -1,0 +1,10 @@
+name: collapse_gtf
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.8
+  - pandas
+  - numpy
+  - bx-python

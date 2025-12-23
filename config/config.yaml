@@ -20,7 +20,7 @@ resources:
   chrom_sizes: /storage/zhangkaiLab/hanlitian/database/algin_ref/atac_pipeline/hg38/hg38.chromSizes
   rsem_index_dir: /storage/zhangkaiLab/hanlitian/database/algin_ref/atac_pipeline/hg38/rsem
   gene_type_tsv: "resources/gencodeV29pri-UCSC-tRNAs-ERCC-phiX.transcript_id_to_genes.tsv"
-
+  collapsed_gtf: /storage/zhangkaiLab/hanlitian/database/algin_ref/atac_pipeline/hg38/gencode.v38.collapsed.gtf
 # STAR alignment parameters
 params:
   star:
