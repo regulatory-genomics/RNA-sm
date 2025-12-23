@@ -18,6 +18,7 @@ resources:
   gtf: /storage/zhangkaiLab/hanlitian/database/algin_ref/atac_pipeline/hg38/gencode.v38.basic.annotation.gtf
   fasta: /storage/zhangkaiLab/hanlitian/database/algin_ref/atac_pipeline/hg38/hg38.fa
   chrom_sizes: /storage/zhangkaiLab/hanlitian/database/algin_ref/atac_pipeline/hg38/hg38.chromSizes
+  rsem_index_dir: /storage/zhangkaiLab/hanlitian/database/algin_ref/atac_pipeline/hg38/rsem
 
 # STAR alignment parameters
 params:

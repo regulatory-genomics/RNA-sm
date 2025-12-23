@@ -188,24 +188,36 @@ def normalize_strandedness(val):
         # Return as-is if it's already a valid value
         return strand_val
 
-def get_strandedness(sample_run=None):
+def get_strandedness(sample_name_or_run=None):
     """
     Get strandedness information for RNA-seq samples.
     Returns 'none', 'yes', or 'reverse' (matching count-matrix.py expectations).
+    Can accept either sample_name or sample_run.
     If strandedness column exists in annot, use it; otherwise default to 'none'.
     """
     
     if "strandedness" in annot.columns:
-        if sample_run:
-            strand_val = annot.loc[sample_run, "strandedness"]
-            return normalize_strandedness(strand_val)
+        if sample_name_or_run:
+            # Check if it's a sample_run (in annot.index) or sample_name
+            if sample_name_or_run in annot.index:
+                # It's a sample_run
+                strand_val = annot.loc[sample_name_or_run, "strandedness"]
+                return normalize_strandedness(strand_val)
+            else:
+                # It's a sample_name - get strandedness from first run
+                sample_runs = get_runs_for_sample(sample_name_or_run)
+                if sample_runs:
+                    strand_val = annot.loc[sample_runs[0], "strandedness"]
+                    return normalize_strandedness(strand_val)
+                else:
+                    return "none"
         else:
             # Return list of strandedness values for all sample_runs
             return [normalize_strandedness(annot.loc[sr, "strandedness"]) for sr in annot.index]
     else:
-        config_strandedness = config.get("params", {}).get("star", {}).get("strandedness", "yes")
-        # Default to 'none' if column doesn't exist
-        return config_strandedness if sample_run else [config_strandedness] * len(annot.index)
+        config_strandedness = config.get("params", {}).get("star", {}).get("strandedness", "none")
+        # Default to config value if column doesn't exist
+        return config_strandedness if sample_name_or_run else [config_strandedness] * len(annot.index)
 
 def get_samples_passing_qc():
     """Get sample names that have at least one run passing QC (passqc=1).
@@ -237,15 +249,9 @@ def get_final_output():
     
     outputs = []
     
-    # Important processed - BAM files for all sample_runs
-    for sample_run in annot.index:
-        outputs.append(os.path.join(result_path, "Important_processed", "Bam", f"{sample_run}_sortedByCoord.out.bam"))
-    
-    # Merged BAM files per sample (if multiple runs exist)
+    # Important processed - BAM files (per sample, all runs processed together)
     for sample_name in samples.keys():
-        runs = get_runs_for_sample(sample_name)
-        if len(runs) > 1:
-            outputs.append(os.path.join(result_path, "Important_processed", "Bam", f"{sample_name}.bam"))
+        outputs.append(os.path.join(result_path, "Important_processed", "Bam", f"{sample_name}_sortedByCoord.out.bam"))
     
     # Downstream results - Count matrix
     outputs.append(os.path.join(result_path, "downstream_res", "counts", "all_counts.tsv"))
@@ -354,20 +360,50 @@ def get_track_strandedness(sample_name_or_run):
         return "Unstranded"
 
 
+def get_strandedness_list():
+    """Get strandedness values for all samples in the same order as input files"""
+    return [get_strandedness(sample_name) for sample_name in samples.keys()]
+
 def get_bam_for_tracks(sample_name):
     """
     Get the BAM file to use for track generation.
-    Prefers merged BAM if available, otherwise uses first sample_run BAM.
+    Now uses per-sample BAM (all runs processed together).
     """
-    sample_runs = get_runs_for_sample(sample_name)
-    if len(sample_runs) > 1:
-        # Use merged BAM if multiple runs exist
-        return os.path.join(result_path, "Important_processed", "Bam", f"{sample_name}.bam")
+    return os.path.join(result_path, "Important_processed", "Bam", f"{sample_name}_sortedByCoord.out.bam")
+
+def get_rsem_forward_prob(wildcards):
+    """
+    Converts biological strandedness to RSEM's numeric probability.
+    
+    RSEM logic:
+    - 1.0 = Forward strand (reads match transcript direction)
+    - 0.0 = Reverse strand (reads are complement of transcript, e.g. dUTP/Illumina)
+    - 0.5 = Unstranded
+    """
+    # Replace this with your actual lookup logic (e.g. pandas dataframe or config)
+    strand = get_strandedness(wildcards.sample) 
+    
+    if strand == "reverse": # Most common for Illumina
+        return "0.0"
+    elif strand == "yes":
+        return "1.0"
     else:
-        # Use the single run BAM
-        return os.path.join(
-            result_path,
-            "Important_processed",
-            "Bam",
-            f"{sample_runs[0]}_sortedByCoord.out.bam",
-        )
+        return "0.5"
+
+def get_rsem_paired_flag(wildcards):
+    """
+    Returns '--paired-end' if the sample has R2 files, else empty string.
+    """
+    # Check the first run of this sample to determine endedness
+    sample_runs = get_runs_for_sample(wildcards.sample)
+    if not sample_runs:
+        return ""
+    
+    # Check if R2 exists for the first run
+    u = annot.loc[sample_runs[0]]
+    r2 = u["R2"]
+    
+    # If R2 is present (not NaN and not empty), it is paired
+    if not pd.isna(r2) and str(r2).strip() != "":
+        return "--paired-end"
+    return ""

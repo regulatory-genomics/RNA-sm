@@ -1,21 +1,17 @@
 import os
 
-def get_strandedness_list():
-    """Get strandedness values for all sample_runs in the same order as input files"""
-    return [get_strandedness(sr) for sr in annot.index]
-
 rule count_matrix:
     input:
         expand(
-            os.path.join(result_path, "downstream_res", "counts", "{sample_run}_ReadsPerGene.out.tab"),
-            sample_run=annot.index,
+            os.path.join(result_path, "downstream_res", "counts", "{sample}_ReadsPerGene.out.tab"),
+            sample=samples.keys(),
         ),
     output:
         os.path.join(result_path, "downstream_res", "counts", "all_counts.tsv"),
     log:
         os.path.join(result_path, "logs", "count_matrix.log"),
     params:
-        samples=annot.index.tolist(),
+        samples=list(samples.keys()),
         strand=get_strandedness_list(),
     conda:
         "../env/pandas.yaml"

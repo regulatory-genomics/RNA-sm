@@ -39,25 +39,29 @@ rule all:
         # Report outputs
         multiqc_report = os.path.join(result_path, "Report", "multiqc_report.html"),
         
-        # Important processed - BAM files
+        # Important processed - BAM files (per sample, all runs processed together)
         bam_files = expand(
-            os.path.join(result_path, "Important_processed", "Bam", "{sample_run}_sortedByCoord.out.bam"),
-            sample_run=annot.index
+            os.path.join(result_path, "Important_processed", "Bam", "{sample}_sortedByCoord.out.bam"),
+            sample=samples.keys()
         ),
-        
-        # Merged BAM files (if multiple runs per sample)
-        merged_bams = expand(
-            os.path.join(result_path, "Important_processed", "Bam", "{sample}.bam"),
-            sample=[s for s in samples.keys() if len(get_runs_for_sample(s)) > 1]
-        ) if any(len(get_runs_for_sample(s)) > 1 for s in samples.keys()) else [],
         
         # Downstream results - Count matrix
         counts = os.path.join(result_path, "downstream_res", "counts", "all_counts.tsv"),
 
         # BigWig files
         bigwigs = get_final_bigwigs,
+        # RSEM results
+        rsem_genes = expand(
+            os.path.join(result_path, "downstream_res", "rsem", "{sample}.genes.results"),
+            sample=samples.keys()
+        ),
+        rsem_isoforms = expand(
+            os.path.join(result_path, "downstream_res", "rsem", "{sample}.isoforms.results"),
+            sample=samples.keys()
+        ),
 
 ##### load rules #####
+include: "rules/quantification.smk"
 include: "rules/qc.smk"
 include: "rules/align.smk"
 include: "rules/count.smk"
