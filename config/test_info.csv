@@ -1,3 +1,5 @@
 sample_name,run,R1,R2,replicate_name
 test1,1,/storage/zhangkaiLab/hanlitian/macrophage/data/RNA/test1_1_1.fq.zst,/storage/zhangkaiLab/hanlitian/macrophage/data/RNA/test1_1_2.fq.zst,test1
 test1,2,/storage/zhangkaiLab/hanlitian/macrophage/data/RNA/test1_2_1.fq.zst,/storage/zhangkaiLab/hanlitian/macrophage/data/RNA/test1_2_2.fq.zst,test1
+test2,1,/storage/zhangkaiLab/hanlitian/macrophage/data/RNA/test1_1_1.fq.zst,/storage/zhangkaiLab/hanlitian/macrophage/data/RNA/test1_1_2.fq.zst,test2
+test3,2,/storage/zhangkaiLab/hanlitian/macrophage/data/RNA/test1_2_1.fq.zst,/storage/zhangkaiLab/hanlitian/macrophage/data/RNA/test1_2_2.fq.zst,test2

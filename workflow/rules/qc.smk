@@ -103,7 +103,7 @@ rule rnaseqqc:
         outdir=os.path.join(result_path, "Report", "rnaseqqc"),
         sample="{sample}",
         bed_flag=(f"--bed {config['resources'].get('rnaseqc_bed')}"
-                  if config.get("resources", {}).get("rnaseqc_bed") else "")
+                if config.get("resources", {}).get("rnaseqc_bed") else "")
     log:
         os.path.join(result_path, "logs", "rnaseqqc", "{sample}.log")
     conda:
@@ -135,13 +135,27 @@ rule collapse_gtf:
 
 rule multiqc:
     input:
+        # Keep specific files for dependency tracking
         expand(
             os.path.join(result_path, "Report", "fastp", "{sample_run}_fastp.json"),
             sample_run=annot.index
         ),
         expand(
-            os.path.join(result_path, "Report", "star", "{sample_run}_Log.final.out"),
-            sample_run=annot.index
+            os.path.join(result_path, "Report", "star", "{sample}_Log.final.out"),
+            sample=samples.keys()
+        ),
+        # Add plugin input files for dependency tracking
+        expand(
+            os.path.join(result_path, "Report", "rnaseqqc", "{sample}.metrics.tsv"),
+            sample=samples.keys()
+        ),
+        expand(
+            os.path.join(result_path, "Report", "gene_type_counts", "{sample}.json"),
+            sample=samples.keys()
+        ),
+        expand(
+            os.path.join(result_path, "Report", "rsem", "{sample}.genes.json"),
+            sample=samples.keys()
         ),
     output:
         html=os.path.join(result_path, "Report", "multiqc_report.html"),
@@ -151,6 +165,8 @@ rule multiqc:
     conda:
         "../env/multiqc.yaml"
     params:
-        outdir=os.path.join(result_path, "Report")
+        outdir=os.path.join(result_path, "Report"),
+        report_dir=os.path.join(result_path, "Report")
     shell:
-        "multiqc {input} -o {params.outdir} --filename multiqc_report.html --force 2> {log}"
+        # Search the entire Report directory so MultiQC plugin can find all files
+        "multiqc {params.report_dir} -o {params.outdir} --filename multiqc_report.html --force 2> {log}"
