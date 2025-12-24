@@ -133,6 +133,40 @@ rule collapse_gtf:
     shell:
         "python workflow/scripts/collapse_gene.py {input.gtf} {output.collapsed_gtf} > {log} 2>&1"
 
+rule mad_qc:
+    input:
+        r1 = lambda w: os.path.join(
+            result_path,
+            "downstream_res",
+            "rsem",
+            f"{get_replicate_samples(w.replicate_name)[0]}.genes.results",
+        ),
+        r2 = lambda w: os.path.join(
+            result_path,
+            "downstream_res",
+            "rsem",
+            f"{get_replicate_samples(w.replicate_name)[1]}.genes.results",
+        ),
+    output:
+        metrics = os.path.join(
+            result_path, "Report", "mad_qc", "{replicate_name}.mad_qc_metrics.json"
+        ),
+        plot = os.path.join(
+            result_path, "Report", "mad_qc", "{replicate_name}.mad_plot.png"
+        ),
+    conda:
+        "../env/pandas.yaml"
+    log:
+        os.path.join(result_path, "logs", "mad_qc_{replicate_name}.log")
+    shell:
+        r"""
+        mkdir -p $(dirname {output.metrics})
+        mkdir -p $(dirname {output.plot})
+        python workflow/scripts/mad_qc.py {input.r1} {input.r2} \
+            > {output.metrics} 2> {log}
+        mv MAplot.png {output.plot}
+        """
+
 rule multiqc:
     input:
         # Keep specific files for dependency tracking

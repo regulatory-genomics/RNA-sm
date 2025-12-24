@@ -98,6 +98,7 @@ else:
 wildcard_constraints:
     sample="|".join([re.escape(s) for s in samples.keys()]),
     sample_run="|".join([re.escape(sr) for sr in annot.index.tolist()]),
+    replicate_name="|".join([re.escape(r) for r in replicate_samples]) if replicate_samples else ".*",
 
 # ===================================================
 #              Additional Helper Functions
