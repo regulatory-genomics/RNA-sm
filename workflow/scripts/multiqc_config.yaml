@@ -1,0 +1,10 @@
+fastp:
+    s_name_filenames: true
+
+# Sample name cleaning - strip these extensions first
+fn_clean_exts:
+  - '_fastp'
+  - '.metrics'
+  - '_Log.final.out'
+  - '.genes'
+  - '.isoforms'

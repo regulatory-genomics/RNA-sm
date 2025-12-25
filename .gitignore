@@ -1,2 +1,5 @@
 .snakemake
 logs
+*.egg-info
+__pycache__
+*.pyc

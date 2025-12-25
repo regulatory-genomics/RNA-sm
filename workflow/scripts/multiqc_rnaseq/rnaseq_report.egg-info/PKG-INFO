@@ -1,0 +1,29 @@
+Metadata-Version: 2.2
+Name: rnaseq_report
+Version: 0.1.0
+Summary: Custom RNA-Seq plugin for MultiQC
+Home-page: https://github.com/regulatory-genomics/RNA-sm/tree/main/workflow/scripts/multiqc_rnaseq
+Download-URL: https://github.com/regulatory-genomics/RNA-sm/tree/main/workflow/scripts/multiqc_rnaseq
+Classifier: Development Status :: 4 - Beta
+Classifier: Environment :: Console
+Classifier: Environment :: Web Environment
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Natural Language :: English
+Classifier: Operating System :: MacOS :: MacOS X
+Classifier: Operating System :: POSIX
+Classifier: Operating System :: Unix
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: JavaScript
+Classifier: Topic :: Scientific/Engineering
+Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
+Classifier: Topic :: Scientific/Engineering :: Visualization
+License-File: LICENSE
+Requires-Dist: multiqc
+Requires-Dist: click
+Requires-Dist: tables
+Dynamic: classifier
+Dynamic: download-url
+Dynamic: home-page
+Dynamic: requires-dist
+Dynamic: summary

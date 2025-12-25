@@ -26,7 +26,9 @@ setup(
             'rnaseq_report = rnaseq_report.modules.rnaseq:MultiqcModule',
         ],
         'multiqc.hooks.v1': [
-            # Hooks execution_start to load search patterns
+            # Hook before_config to configure sample renaming (runs before file search)
+            'before_config = rnaseq_report:before_config',
+            # Hook execution_start to load search patterns
             'execution_start = rnaseq_report:execution_start',
         ]
     },

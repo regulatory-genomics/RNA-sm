@@ -191,6 +191,8 @@ rule multiqc:
             os.path.join(result_path, "Report", "rsem", "{sample}.genes.json"),
             sample=samples.keys()
         ),
+        # Include sample CSV as input so it's available for the plugin
+        sample_csv=config["samples"]
     output:
         html=os.path.join(result_path, "Report", "multiqc_report.html"),
         data=directory(os.path.join(result_path, "Report", "multiqc_report_data"))
@@ -200,7 +202,19 @@ rule multiqc:
         "../env/multiqc.yaml"
     params:
         outdir=os.path.join(result_path, "Report"),
-        report_dir=os.path.join(result_path, "Report")
+        report_dir=os.path.join(result_path, "Report"),
+        # Resolve absolute path to sample CSV for environment variable
+        sample_csv_abs=os.path.abspath(config["samples"])
     shell:
+        # Copy sample CSV to Report directory and set environment variable for plugin
         # Search the entire Report directory so MultiQC plugin can find all files
-        "multiqc {params.report_dir} -o {params.outdir} --filename multiqc_report.html --force 2> {log}"
+        r"""
+        # Copy sample CSV to Report directory as backup location
+        cp {input.sample_csv} {params.outdir}/sample_annotation.csv
+        
+        # Set environment variable for MultiQC plugin
+        export MULTIQC_SAMPLE_SHEET={params.sample_csv_abs}
+        
+        # Run MultiQC
+        multiqc {params.report_dir} -o {params.outdir} --filename multiqc_report.html --force 2> {log}
+        """

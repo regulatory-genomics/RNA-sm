@@ -1,0 +1,6 @@
+[multiqc.hooks.v1]
+before_config = rnaseq_report:before_config
+execution_start = rnaseq_report:execution_start
+
+[multiqc.modules.v1]
+rnaseq_report = rnaseq_report.modules.rnaseq:MultiqcModule
