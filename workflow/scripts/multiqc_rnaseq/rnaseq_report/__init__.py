@@ -18,6 +18,7 @@ def before_config():
         '_fastp',
         '.metrics',
         '.metrics.tsv',
+        '.summary_metrics',
         '_Log.final.out',
         '.genes',
         '.isoforms',
@@ -73,6 +74,10 @@ def execution_start():
         'rnaseq/rsem': {
             'fn': ['*.json', '*.cnt'],
             'contents': 'num_genes_detected'
+        },
+        'rnaseq/mad_qc': {
+            'fn': '*summary_metrics.json',
+            'contents': 'MAD of log ratios'
         },
     }
     config.update_dict(config.sp, search_patterns)

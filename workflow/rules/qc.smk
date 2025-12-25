@@ -1,4 +1,7 @@
 import os
+import itertools
+import json
+import pandas as pd
 
 rule fastp:
     input:
@@ -135,37 +138,84 @@ rule collapse_gtf:
 
 rule mad_qc:
     input:
-        r1 = lambda w: os.path.join(
-            result_path,
-            "downstream_res",
-            "rsem",
-            f"{get_replicate_samples(w.replicate_name)[0]}.genes.results",
-        ),
-        r2 = lambda w: os.path.join(
-            result_path,
-            "downstream_res",
-            "rsem",
-            f"{get_replicate_samples(w.replicate_name)[1]}.genes.results",
-        ),
+        # Dynamically fetch ALL samples for this replicate_name/group
+        files = lambda w: [
+            os.path.join(result_path, "downstream_res", "rsem", f"{s}.genes.results")
+            for s in get_replicate_samples(w.replicate_name)
+        ]
     output:
-        metrics = os.path.join(
-            result_path, "Report", "mad_qc", "{replicate_name}.mad_qc_metrics.json"
-        ),
-        plot = os.path.join(
-            result_path, "Report", "mad_qc", "{replicate_name}.mad_plot.png"
-        ),
+        # Directory for individual pairwise files
+        out_dir = directory(os.path.join(result_path, "Report", "mad_qc", "{replicate_name}")),
+        # New: The final summary file with averaged stats
+        summary = os.path.join(result_path, "Report", "mad_qc", "{replicate_name}.summary_metrics.json")
     conda:
         "../env/pandas.yaml"
     log:
         os.path.join(result_path, "logs", "mad_qc_{replicate_name}.log")
-    shell:
-        r"""
-        mkdir -p $(dirname {output.metrics})
-        mkdir -p $(dirname {output.plot})
-        python workflow/scripts/mad_qc.py {input.r1} {input.r2} \
-            > {output.metrics} 2> {log}
-        mv MAplot.png {output.plot}
-        """
+    run:
+        # 1. Setup output directory
+        if not os.path.exists(output.out_dir):
+            os.makedirs(output.out_dir)
+            
+        samples = get_replicate_samples(wildcards.replicate_name)
+        files_map = dict(zip(samples, input.files))
+        
+        # List to collect data frames or dicts for aggregation
+        all_metrics = []
+        
+        # 2. Iterate over all unique pairs
+        # itertools.combinations('ABCD', 2) --> AB AC AD BC BD CD
+        for s1, s2 in itertools.combinations(samples, 2):
+            
+            file1 = files_map[s1]
+            file2 = files_map[s2]
+            pair_id = f"{s1}_vs_{s2}"
+            
+            # Define filenames for this specific pair
+            json_out = os.path.join(output.out_dir, f"{pair_id}.metrics.json")
+            plot_out = os.path.join(output.out_dir, f"{pair_id}.plot.png")
+            
+            # 3. Run the QC script for this pair
+            shell(
+                f"""
+                python workflow/scripts/mad_qc.py {file1} {file2} \
+                    --json {json_out} \
+                    --plot {plot_out} \
+                    2>> {log}
+                """
+            )
+            
+            # 4. Read the results back immediately
+            try:
+                with open(json_out, 'r') as f:
+                    data = json.load(f)
+                    # Optional: Add metadata so you know which pair this was
+                    data['pair'] = pair_id 
+                    all_metrics.append(data)
+            except Exception as e:
+                # Log error if a specific pair fails, but don't crash the whole pipeline immediately
+                log_path = log if isinstance(log, str) else log[0]
+                with open(log_path, 'a') as l:
+                    l.write(f"\n[Error] Could not read JSON for {pair_id}: {e}\n")
+        
+        # 5. Calculate Means and Save Summary
+        if all_metrics:
+            # Create a Pandas DataFrame
+            df = pd.DataFrame(all_metrics)
+            
+            # Calculate mean of numeric columns (automatically ignores 'pair' string column)
+            summary_stats = df.mean(numeric_only=True).to_dict()
+            
+            # Add a count of how many pairs were used
+            summary_stats['num_pairs_evaluated'] = len(all_metrics)
+            
+            # Save the aggregated summary
+            with open(output.summary, 'w') as f:
+                json.dump(summary_stats, f, indent=4)
+        else:
+            # Handle case with single replicate (no pairs possible)
+            with open(output.summary, 'w') as f:
+                json.dump({"status": "No pairs available for aggregation"}, f, indent=4)
 
 rule multiqc:
     input:
@@ -190,6 +240,10 @@ rule multiqc:
         expand(
             os.path.join(result_path, "Report", "rsem", "{sample}.genes.json"),
             sample=samples.keys()
+        ),
+        expand(
+            os.path.join(result_path, "Report", "mad_qc", "{replicate_name}"),
+            replicate_name=replicate_samples
         ),
         # Include sample CSV as input so it's available for the plugin
         sample_csv=config["samples"]

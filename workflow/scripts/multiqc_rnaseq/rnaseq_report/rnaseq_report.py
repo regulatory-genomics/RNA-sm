@@ -43,6 +43,8 @@ def rnaseq_report_execution_start():
     if 'rnaseq/rsem' not in config.sp:
         config.update_dict(config.sp, {'rnaseq/rsem': {'fn': '*.json', 'contents': 'num_genes_detected'}})
         log.info("updated config.sp for rnaseq/rsem")
+    if 'rnaseq/mad_qc' not in config.sp:
+        config.update_dict(config.sp, {'rnaseq/mad_qc': {'fn': '*.summary_metrics.json'}})
 
 
 def rnaseq_report_after_modules():

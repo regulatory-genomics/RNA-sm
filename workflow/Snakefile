@@ -78,10 +78,7 @@ rule all:
             sample=samples.keys()
         ),
         mad_qc = expand(
-            [
-                os.path.join(result_path, "Report", "mad_qc", "{replicate_name}.mad_qc_metrics.json"),
-                os.path.join(result_path, "Report", "mad_qc", "{replicate_name}.mad_plot.png"),
-            ],
+            os.path.join(result_path, "Report", "mad_qc", "{replicate_name}.summary_metrics.json"),
             replicate_name=replicate_samples
         ) if replicate_samples else [],
 

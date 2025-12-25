@@ -1,4 +1,5 @@
 import sys
+import argparse
 import pandas as pd
 import numpy as np
 import json
@@ -45,12 +46,28 @@ def organize_exp(file1, file2, exp_col_idx, id_col_idx):
     return merged
 
 def main():
-    if len(sys.argv) < 3:
-        print("Usage: python mad_qc.py <table1> <table2>")
-        sys.exit(1)
-
-    file1 = sys.argv[1]
-    file2 = sys.argv[2]
+    parser = argparse.ArgumentParser(
+        description="Calculate MAD QC metrics between two RSEM gene expression files"
+    )
+    parser.add_argument("file1", help="First RSEM genes.results file")
+    parser.add_argument("file2", help="Second RSEM genes.results file")
+    parser.add_argument(
+        "--json",
+        help="Output JSON file path (default: stdout)",
+        default=None
+    )
+    parser.add_argument(
+        "--plot",
+        help="Output plot file path (default: MAplot.png)",
+        default="MAplot.png"
+    )
+    
+    args = parser.parse_args()
+    
+    file1 = args.file1
+    file2 = args.file2
+    json_out = args.json
+    plot_out = args.plot
 
     # --- Configuration matches R script defaults ---
     # R used col 7 for Data (FPKM) -> Python index 6
@@ -124,7 +141,12 @@ def main():
         stats = {"warning": "No genes passed the expression cutoff (A > 0)"}
 
     # 7. Output JSON
-    print(json.dumps(stats, indent=4))
+    json_str = json.dumps(stats, indent=4)
+    if json_out:
+        with open(json_out, 'w') as f:
+            f.write(json_str)
+    else:
+        print(json_str)
 
     # 8. Generate MA Plot
     # R: bitmap("MAplot.png"); plot(A,M)
@@ -141,7 +163,8 @@ def main():
     plt.axhline(0, color='red', linewidth=1, linestyle='--')
     
     plt.tight_layout()
-    plt.savefig("MAplot.png", dpi=150)
+    plt.savefig(plot_out, dpi=150)
+    plt.close()  # Close the figure to free memory
 
 if __name__ == "__main__":
     main()

@@ -20,6 +20,7 @@ class MultiqcModule(BaseMultiqcModule):
         self.rnaseqc_data = dict()    # Stores metrics.tsv data
         self.genetype_data = dict()   # Stores gene_type_counts data
         self.rsem_data = dict()       # Stores rsem.genes.json data
+        self.mad_data = dict()
 
         # -----------------------------------------------------------
         # 3. PARSING LOGIC
@@ -40,6 +41,9 @@ class MultiqcModule(BaseMultiqcModule):
         for f in self.find_log_files('rnaseq/rsem'):
             self.parse_rsem_json(f)
 
+        for f in self.find_log_files('rnaseq/mad_qc'):
+            self.parse_mad_json(f)
+
         # -----------------------------------------------------------
         # 4. FILTERING & EXIT
         # -----------------------------------------------------------
@@ -47,6 +51,7 @@ class MultiqcModule(BaseMultiqcModule):
         self.rnaseqc_data = self.ignore_samples(self.rnaseqc_data)
         self.genetype_data = self.ignore_samples(self.genetype_data)
         self.rsem_data = self.ignore_samples(self.rsem_data)
+        self.mad_data = self.ignore_samples(self.mad_data)
 
         # If no data found at all, raise warning
         if len(self.rnaseqc_data) == 0 and len(self.genetype_data) == 0:
@@ -98,6 +103,18 @@ class MultiqcModule(BaseMultiqcModule):
         except Exception as e:
             pass
 
+    def parse_mad_json(self, f):
+        """ Parses the MAD QC summary JSON file """
+        try:
+            data = json.loads(f['content'])
+            # Check if this is a valid MAD QC summary (has MAD metrics)
+            if "MAD of log ratios" in data or "Pearson correlation" in data:
+                # Use the replicate_name as the sample name (from filename like "rep1.summary_metrics.json")
+                # The filename will be cleaned to just "rep1" by MultiQC's name cleaning
+                self.mad_data[f['s_name']] = data
+        except Exception as e:
+            pass
+
     # ===============================================================
     # REPORT WRITING
     # ===============================================================
@@ -131,10 +148,39 @@ class MultiqcModule(BaseMultiqcModule):
             'scale': 'OrRd'
         }
 
+
+        mad_headers = OrderedDict()
+        
+        mad_headers['MAD of log ratios'] = {
+            'title': 'MAD',
+            'description': 'Median Absolute Deviation of log ratios (Lower is better)',
+            'min': 0,
+            'scale': 'RdYlGn-rev', # Reverse scale: Green is low (good), Red is high (bad)
+            'format': '{:,.3f}'
+        }
+        
+        mad_headers['Pearson correlation'] = {
+            'title': 'Pearson',
+            'description': 'Pearson correlation of replicates (Closer to 1 is better)',
+            'max': 1, 'min': 0,
+            'scale': 'Greens',
+            'format': '{:,.3f}'
+        }
+
+        mad_headers['Spearman correlation'] = {
+            'title': 'Spearman',
+            'description': 'Spearman rank correlation (Closer to 1 is better)',
+            'max': 1, 'min': 0,
+            'scale': 'Greens',
+            'format': '{:,.3f}',
+            'hidden': True # Hide by default to save space (user can toggle it on)
+        }
+
         # 3. Add to General Stats
         # We call this twice to merge data from different dictionaries
         self.general_stats_addcols(self.rnaseqc_data, rnaseqc_headers)
         self.general_stats_addcols(self.rsem_data, rsem_headers)
+        self.general_stats_addcols(self.mad_data, mad_headers)
 
     def write_gene_type_plot(self):
         """ Creates a Stacked Bar Plot for Gene Types """

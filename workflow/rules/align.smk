@@ -42,7 +42,7 @@ rule star_align:
         os.path.join(result_path, "logs", "star", "{sample}.log")
     params:
         # Define a temporary prefix for this sample to avoid collisions
-        prefix=lambda w: os.path.join(result_path, "temp_star", w.sample, ""),
+        prefix=lambda w: os.path.join(result_path, "middle_file", "temp_star", w.sample, ""),
         # Join all R1 and R2 files with commas for STAR
         fq1_str=lambda w, input: ",".join(input.fq1),
         fq2_str=lambda w, input: ",".join(input.fq2) if input.fq2 and None not in input.fq2 else ""
