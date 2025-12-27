@@ -60,7 +60,7 @@ rule all:
             sample=samples.keys()
         ),
         gene_type_counts = expand(
-            os.path.join(result_path, "Report", "gene_type_counts", "{sample}.json"),
+            os.path.join(result_path, "Report", "gene_type_counts", "{sample}_gene_type_count.json"),
             sample=samples.keys()
         ),
         gene_count_json = expand(

@@ -66,7 +66,7 @@ rule qc_gene_type_count:
         tsv = config["resources"]["gene_type_tsv"]
     output:
         # Output JSON file with counts
-        json = os.path.join(result_path, "Report", "gene_type_counts", "{sample}.json")
+        json = os.path.join(result_path, "Report", "gene_type_counts", "{sample}_gene_type_count.json")
     params:
         # Path to the python script you saved
         script = "workflow/scripts/rna_qc.py"
@@ -235,7 +235,7 @@ rule multiqc:
             sample=samples.keys()
         ),
         expand(
-            os.path.join(result_path, "Report", "gene_type_counts", "{sample}.json"),
+            os.path.join(result_path, "Report", "gene_type_counts", "{sample}_gene_type_count.json"),
             sample=samples.keys()
         ),
         expand(

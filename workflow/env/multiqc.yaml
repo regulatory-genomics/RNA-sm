@@ -3,7 +3,7 @@ channels:
   - bioconda
   - nodefaults
 dependencies:
-  - multiqc=1.18
+  - multiqc=1.32
   - python=3.11.6
   - setuptools=68.2.2
   - pandas=2.1.3
@@ -11,3 +11,4 @@ dependencies:
   - pip=23.3.1
   - pip:
       - 'git+https://github.com/GilbertHan1011/multiomicQc'
+    # force reinstall 1
