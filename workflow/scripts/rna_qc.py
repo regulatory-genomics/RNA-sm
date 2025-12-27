@@ -10,21 +10,19 @@ __license__ = "MIT"
 import argparse
 import json
 import logging
+import os
 
 import pysam
 from qc_utils import QCMetric, QCMetricRecord
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-filehandler = logging.FileHandler("rna_qc.log")
-filehandler.setLevel(logging.DEBUG)
+# File handler will be set up in main() after parsing arguments
 consolehandler = logging.StreamHandler()
 consolehandler.setLevel(logging.INFO)
 formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(name)s: %(message)s")
-filehandler.setFormatter(formatter)
 consolehandler.setFormatter(formatter)
 logger.addHandler(consolehandler)
-logger.addHandler(filehandler)
 
 
 def read_dict_from_tsv(path_to_tsv):
@@ -91,6 +89,18 @@ def get_gene_type_counts(tr_to_gene_type_map, bampath):
 
 
 def main(args):
+    # Set up file handler for logging if log file path is provided
+    if args.log_file:
+        # Ensure the log directory exists
+        log_dir = os.path.dirname(args.log_file)
+        if log_dir and not os.path.exists(log_dir):
+            os.makedirs(log_dir, exist_ok=True)
+        filehandler = logging.FileHandler(args.log_file)
+        filehandler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(name)s: %(message)s")
+        filehandler.setFormatter(formatter)
+        logger.addHandler(filehandler)
+    
     qc_record = QCMetricRecord()
     logger.info(
         "Reading transcript id to gene type mapping from %s",
@@ -115,5 +125,11 @@ if __name__ == "__main__":
         help="path to transcript id to gene type tsv",
     )
     parser.add_argument("--output_filename", type=str)
+    parser.add_argument(
+        "--log_file",
+        type=str,
+        default=None,
+        help="path to log file (optional, if not provided, only console logging)"
+    )
     args = parser.parse_args()
     main(args)

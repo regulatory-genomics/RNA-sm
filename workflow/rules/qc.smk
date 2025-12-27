@@ -83,6 +83,7 @@ rule qc_gene_type_count:
             --input_bam {input.bam} \
             --tr_id_to_gene_type_tsv {input.tsv} \
             --output_filename {output.json} \
+            --log_file {log} \
             > {log} 2>&1
         """
 

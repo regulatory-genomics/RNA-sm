@@ -48,7 +48,7 @@ validate(annot, schema="../../schemas/samples.schema.yaml")
 
 # Create a unique identifier for each run: sample_name_run
 annot['sample_name'] = annot['sample_name'].astype(str)
-annot['sample_run'] = annot['sample_name'] + '_' + annot['run'].astype(str)
+annot['sample_run'] = annot['sample_name'] + '_run'+ annot['run'].astype(str)
 
 # Check for duplicate sample_run identifiers
 duplicates = annot[annot.duplicated(subset=['sample_run'], keep=False)]
