@@ -4,3 +4,5 @@ logs
 __pycache__
 *.pyc
 *_rename.tsv
+sample_latest.csv
+config_sample.yaml

@@ -21,7 +21,7 @@ module_name = "rnaseq_pipeline"
 envs = ["fastp", "pandas", "multiqc"]
 
 # load config and sample annotation sheets #####
-configfile: "config/config.yaml"
+configfile: "config/config_sample.yaml"
 
 validate(config, schema="../schemas/config.schema.yaml")
 

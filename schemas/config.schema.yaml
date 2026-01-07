@@ -5,9 +5,6 @@ description: snakemake configuration file
 type: object
 
 properties:
-  samples:
-    type: string
-    description: path to sample information CSV file
   ref:
     type: object
     properties:
