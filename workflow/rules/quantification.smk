@@ -79,3 +79,29 @@ rule rsem_index:
             {input.fasta} \
             {params.prefix}
         """
+
+rule rsem_matrix:
+    """
+    Process RSEM gene expression files to generate:
+    1. Meta file: transcript_id, gene_id, length, effective_length
+    2. Three matrices: expected_count, TPM, FPKM (sample × gene)
+    """
+    input:
+        genes=expand(
+            os.path.join(result_path, "downstream_res", "rsem", "{sample}.genes.results"),
+            sample=samples.keys()
+        )
+    output:
+        meta=os.path.join(result_path, "Important_processed", "rsem_count", "gene_meta.txt"),
+        expected_count=os.path.join(result_path, "Important_processed", "rsem_count", "expected_count_matrix.txt"),
+        tpm=os.path.join(result_path, "Important_processed", "rsem_count", "TPM_matrix.txt"),
+        fpkm=os.path.join(result_path, "Important_processed", "rsem_count", "FPKM_matrix.txt")
+    log:
+        os.path.join(result_path, "downstream_res", "rsem", "process_rsem_matrix.log")
+    resources:
+        mem_mb=8000,
+        runtime=300
+    conda:
+        "../env/pandas.yaml"
+    script:
+        "../scripts/process_rsem_matrix.py"

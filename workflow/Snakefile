@@ -59,6 +59,11 @@ rule all:
             os.path.join(result_path, "downstream_res", "rsem", "{sample}.isoforms.results"),
             sample=samples.keys()
         ),
+        # RSEM expression matrices
+        rsem_meta = os.path.join(result_path, "Important_processed", "rsem_count", "gene_meta.txt"),
+        rsem_expected_count = os.path.join(result_path, "Important_processed", "rsem_count", "expected_count_matrix.txt"),
+        rsem_tpm = os.path.join(result_path, "Important_processed", "rsem_count", "TPM_matrix.txt"),
+        rsem_fpkm = os.path.join(result_path, "Important_processed", "rsem_count", "FPKM_matrix.txt"),
         gene_type_counts = expand(
             os.path.join(result_path, "Report", "gene_type_counts", "{sample}_gene_type_count.json"),
             sample=samples.keys()
